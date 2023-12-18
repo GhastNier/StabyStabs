@@ -1,0 +1,158 @@
+#include "raylib.h"
+#include "raymath.h"
+
+struct WindowSize
+{
+    const float width;
+    const float height;
+};
+struct CharacterData
+{
+    Texture2D texture;
+    Rectangle source;
+    Rectangle dest;
+    Vector2 pos;
+    int frameX;
+    int frameY;
+    float updateTime;
+    float runningTime;
+    float maxFrameX;
+    float maxFrameY;
+};
+struct CharacterStates
+{
+    CharacterData idle;
+    CharacterData walk;
+    CharacterData attack;
+    CharacterData run;
+    CharacterData hurt;
+    CharacterData death;
+    CharacterData push;
+};
+CharacterStates generateCharacter(
+    Texture2D idleText, float maxIdleX,
+    Texture2D walkText, float maxWalkX,
+    Texture2D attackText, float maxAtkX,
+    Texture2D runText, float maxRunX,
+    Texture2D hurtText, float maxHurtX,
+    Texture2D deathText, float maxDeathX,
+    Texture2D pushText, float maxPushX, WindowSize windowSize, float updateTime)
+{
+    Vector2 idlePos = {windowSize.width / 2.0f - 0.5f * ((float)idleText.width / maxIdleX), (float)windowSize.height / 2 - (0.5f * (float)idleText.height)};
+    CharacterStates charStates;
+    
+    CharacterData idle{
+        idleText,                                                                                                                                   //Texture
+        {0.f, 0.f, (float)idleText.width / 4.f, (float)idleText.height},                                                                            //Source
+        {idlePos.x, idlePos.y, (float)idleText.width / maxIdleX * 3.0f, (float)idleText.height * 3.0f},                                             //Dest
+        {idlePos.x, idlePos.y},                                                                                                                     //Pos
+        0,                                                                                                                                          //FrameX
+        0,                                                                                                                                          //FrameY
+        updateTime,                                                                                                                                 //UpdateTime                              
+        0,                                                                                                                                          //RunningTime
+        maxIdleX,                                                                                                                                   //MaxFrameX
+        1.0f};                                                                                                                                         //MaxFrameY
+    CharacterData walk{walkText, {0, 0}, {0, 0}, 0, 0, 0, 0, maxWalkX, 1};
+    CharacterData attack{attackText, {0, 0}, {0, 0}, {0, 0}, 0, 0, 0, 0, maxAtkX, 1};
+    CharacterData run{runText, {0, 0}, {0, 0}, {0, 0}, 0, 0, 0, 0, maxRunX, 1};
+    CharacterData hurt{hurtText, {0, 0}, {0, 0}, {0, 0}, 0, 0, 0, 0, maxHurtX, 1};
+    CharacterData death{deathText, {0, 0}, {0, 0}, {0, 0}, 0, 0, 0, 0, maxDeathX, 1};
+    CharacterData push{pushText, {0, 0}, {0, 0}, {0, 0}, 0, 0, 0, 0, maxPushX, 1};
+    charStates = {idle, walk, attack, run, hurt, death, push};
+    return charStates;
+};
+enum States
+{
+    IDLE,
+    WALK,
+    ATTACK,
+    RUN,
+    HURT,
+    DEATH,
+    PUSH
+};
+CharacterData updateCharacter(CharacterData data)
+{
+    // update running time
+    data.runningTime += GetFrameTime();
+    if (data.runningTime >= data.updateTime)
+    {
+        data.frameX++;
+        data.runningTime = 0.f;
+        if(data.frameX > data.maxFrameX) data.frameX = 0;
+        //data.frameY > data.maxFrameY ? data.frameY = 0 : data.frameY++;
+    }
+    data.source = {data.frameX * (float)data.texture.width / data.maxFrameX, 0.f, (float)data.texture.width / data.maxFrameX, (float)data.texture.height};
+    return data;
+};
+int main()
+{
+
+    WindowSize windowSize{768, 768};
+    InitWindow(windowSize.width, windowSize.height, "MappyMap");
+
+    Texture2D map = LoadTexture("nature_tileset/worldMap.png");
+    Vector2 mapPos = {0, 0};
+    // Character
+    Texture2D owlet[7];
+    owlet[0] = LoadTexture("characters/owlet/idle_4.png");
+    owlet[1] = LoadTexture("characters/owlet/owlet_walk_6.png");
+    owlet[2] = LoadTexture("characters/owlet/attack_2_6.png");
+    owlet[3] = LoadTexture("characters/owlet/run_6.png");
+    owlet[4] = LoadTexture("characters/owlet/hurt_4.png");
+    owlet[5] = LoadTexture("characters/owlet/death_8.png");
+    owlet[6] = LoadTexture("characters/owlet/push_6.png");
+
+    float screenSpeed{10.0};
+    float directionRL{1.f};
+    float updateTime{1.0f/12.0f};
+    SetTargetFPS(60);
+
+    while (!WindowShouldClose())
+    {
+        BeginDrawing();
+        ClearBackground(WHITE);
+        CharacterStates owletStates = generateCharacter(owlet[0], 4.f, owlet[1], 6.f, owlet[2], 6.f, owlet[3], 6.f, owlet[4], 4.f, owlet[5], 8.f, owlet[6], 6.f, windowSize,updateTime);
+        Vector2 direction{};
+        if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D))
+            direction.x += 1.0f;
+        if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A))
+            direction.x -= 1.0f;
+        if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W))
+            direction.y -= 1.0f;
+        if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S))
+            direction.y += 1.0f;
+        if (Vector2Length(direction) != 0.0f)
+        {
+            // set mapPos = mapPos - Direction
+            mapPos = Vector2Subtract(mapPos, Vector2Scale(Vector2Normalize(direction), screenSpeed));
+            direction.x < 0.f && !(IsKeyDown(KEY_RIGHT)||IsKeyDown(KEY_D)) ? directionRL = -1.f : directionRL = 1.f;
+        }
+        if (mapPos.x > 0)
+            mapPos.x = 0;
+        if (mapPos.x <= -(float)windowSize.height * 5.95f)
+            mapPos.x = -(float)windowSize.height * 5.95f;
+        if (mapPos.y > 0)
+            mapPos.y = 0;
+        if (mapPos.y <= -(float)windowSize.width * 5.85f)
+            mapPos.y = -(float)windowSize.width * 5.85f;
+        {
+            owletStates.idle.runningTime += GetFrameTime();
+            if(owletStates.idle.runningTime >= owletStates.idle.updateTime){
+                owletStates.idle.frameX++;
+                owletStates.idle.runningTime = 0.f;
+                if(owletStates.idle.frameX > owletStates.idle.maxFrameX) owletStates.idle.frameX = 0;
+            }
+            owletStates.idle.source = {owletStates.idle.frameX * (float)owletStates.idle.texture.width / owletStates.idle.maxFrameX, 0.f, (float)owletStates.idle.texture.width / owletStates.idle.maxFrameX, (float)owletStates.idle.texture.height};
+            DrawTextureEx(map, mapPos, 0, 7.0f, WHITE);
+            DrawTexturePro(owletStates.idle.texture, {owletStates.idle.source.x, owletStates.idle.source.y, owletStates.idle.source.width * directionRL,owletStates.idle.source.height}, owletStates.idle.dest, Vector2{}, 0.f, WHITE);
+        }
+        EndDrawing();
+    }
+    UnloadTexture(map);
+    for (auto &owlets : owlet)
+    {
+        UnloadTexture(owlets);
+    }
+    CloseWindow();
+}
