@@ -1,9 +1,8 @@
 
 #include "Character.h"
 #include "raymath.h"
-Character::Character(int winWidth, int winHeight) : 
-windowWidth(winWidth),
-windowHeight(winHeight)
+Character::Character(int winWidth, int winHeight) : windowWidth(winWidth),
+                                                    windowHeight(winHeight)
 {
     width = texture.width / maxFrames;
     height = texture.height;
@@ -16,7 +15,8 @@ Vector2 Character::getScreenPos()
 }
 void Character::tick(float deltaTime)
 {
-    if(!getAlive()) return;
+    if (!getAlive())
+        return;
 
     if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT))
         velocity.x -= 1.0;
@@ -40,7 +40,7 @@ void Character::tick(float deltaTime)
             getScreenPos().y + offset.y - weapon.height * scale,
             weapon.width * scale,
             weapon.height * scale};
-            rotation = IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsKeyDown(KEY_SPACE) ? 35.f : 0.f;
+        rotation = IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsKeyDown(KEY_SPACE) ? 35.f : 0.f;
     }
     else
     {
@@ -51,7 +51,7 @@ void Character::tick(float deltaTime)
             getScreenPos().y + offset.y - weapon.height * scale,
             weapon.width * scale,
             weapon.height * scale};
-            rotation = IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsKeyDown(KEY_SPACE) ? -35.f : 0.f;
+        rotation = IsMouseButtonDown(MOUSE_BUTTON_LEFT) || IsKeyDown(KEY_SPACE) ? -35.f : 0.f;
     }
 
     Rectangle source{
@@ -67,9 +67,11 @@ void Character::tick(float deltaTime)
     DrawTexturePro(weapon, source, dest, origin, rotation, WHITE);
 }
 
-void Character::takeDamage(float damage){
+void Character::takeDamage(float damage)
+{
     health -= damage;
-    if(health <= 0.f){
+    if (health <= 0.99f)
+    {
         setAlive(false);
     }
 }
