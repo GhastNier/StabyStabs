@@ -3,7 +3,6 @@
 
 BaseCharacter::BaseCharacter()
 {
-    
 }
 void BaseCharacter::undoMovement()
 {
@@ -16,12 +15,12 @@ Rectangle BaseCharacter::getCollisionRec()
         getScreenPos().x,
         getScreenPos().y,
         width * scale,
-        height * scale
-    };
+        height * scale};
 }
-void BaseCharacter::tick(float deltaTime){
+void BaseCharacter::tick(float deltaTime)
+{
     worldPosLastFrame = worldPos;
-    // update animation frame
+
     runningTime += deltaTime;
     if (runningTime >= updateTime)
     {
@@ -31,12 +30,11 @@ void BaseCharacter::tick(float deltaTime){
             frame = 0;
     }
 
-    // draw the character
     Rectangle source{frame * width, 0.f, rightLeft * width, height};
     Rectangle dest{getScreenPos().x, getScreenPos().y, scale * width, scale * height};
-     if (Vector2Length(velocity) != 0.0)
+    if (Vector2Length(velocity) != 0.0)
     {
-        // set worldPos = worldPos + velocity
+
         worldPos = Vector2Add(worldPos, Vector2Scale(Vector2Normalize(velocity), speed));
         velocity.x < 0.f ? rightLeft = -1.f : rightLeft = 1.f;
         texture = run;
@@ -48,4 +46,3 @@ void BaseCharacter::tick(float deltaTime){
     velocity = {};
     DrawTexturePro(texture, source, dest, Vector2{}, 0.f, WHITE);
 }
-

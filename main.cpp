@@ -1,17 +1,21 @@
 #include "raylib.h"
-#include "raymath.h"
+#include "C:/raylib/raylib/src/raymath.h"
 #include "Character.h"
 #include "Enemy.h"
 #include "prop.h"
+#include "health.h"
+#include "gameover.h"
 #include <string>
+
 int main()
 {
-    const int windowWidth{384};
-    const int windowHeight{384};
+    const int windowWidth{720};
+    const int windowHeight{720};
     InitWindow(windowWidth, windowHeight, "Stabby Stabs!");
+
     Texture2D map = LoadTexture("nature_tileset/worldMap.png");
     Vector2 mapPos{0.0, 0.0};
-    const float mapScale{4.0f*2};
+    const float mapScale{6.0f};
 
     Character knight{windowWidth, windowHeight};
 
@@ -19,7 +23,7 @@ int main()
         Prop{Vector2{600.f, 300.f}, LoadTexture("nature_tileset/Rock.png")},
         Prop{Vector2{400.f, 500.f}, LoadTexture("nature_tileset/Log.png")}};
 
-     Enemy goblin{
+    Enemy goblin{
         Vector2{800.f, 300.f},
         LoadTexture("characters/goblin_idle_spritesheet.png"),
         LoadTexture("characters/goblin_run_spritesheet.png")};
@@ -32,42 +36,44 @@ int main()
     Enemy *enemies[]{
         &goblin,
         &slime};
-for (auto enemy : enemies)
-{
-    enemy->setTarget(&knight);
-}
-SetTargetFPS(60);
- while (!WindowShouldClose())
+
+    GameOver gameOver;
+
+    for (auto enemy : enemies)
     {
+        enemy->setTarget(&knight);
+    }
+
+    InitHealthSystem("health/heart.png", "health/life.png");
+
+    SetTargetFPS(60);
+
+    while (!WindowShouldClose())
+    {
+
         BeginDrawing();
         ClearBackground(WHITE);
 
         mapPos = Vector2Scale(knight.getWorldPos(), -1.f);
 
-        // draw the map
-        DrawTextureEx(map, mapPos, 0.0, 4.0, WHITE);
+        DrawTextureEx(map, mapPos, 0.0, mapScale, WHITE);
 
-        // draw the props
         for (auto prop : props)
         {
             prop.Render(knight.getWorldPos());
         }
 
-        if (!knight.getAlive()) // Character is not alive
+        if (!knight.getAlive())
         {
-            DrawText("Game Over!", 55.f, 45.f, 40, RED);
+            gameOver.Show(GetFrameTime(), windowWidth, windowHeight);
             EndDrawing();
             continue;
         }
-        else // Character is alive
-        {
-            std::string knightsHealth = "Health: ";
-            knightsHealth.append(std::to_string(static_cast<int>(knight.getHealth())), 0, 5);
-            DrawText(knightsHealth.c_str(), 55.f, 45.f, 40, RED);
-        }
+
+        DrawHealth(knight.getHealth(), Vector2{55.f, 45.f}, 15.f, 3.0f);
 
         knight.tick(GetFrameTime());
-        // check map bounds
+
         if (knight.getWorldPos().x < 0.f ||
             knight.getWorldPos().y < 0.f ||
             knight.getWorldPos().x + windowWidth > map.width * mapScale ||
@@ -75,7 +81,7 @@ SetTargetFPS(60);
         {
             knight.undoMovement();
         }
-        // check prop collisions
+
         for (auto prop : props)
         {
             if (CheckCollisionRecs(prop.getCollisionRec(knight.getWorldPos()), knight.getCollisionRec()))
@@ -89,7 +95,7 @@ SetTargetFPS(60);
             enemy->tick(GetFrameTime());
         }
 
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)|| IsKeyPressed(KEY_SPACE))
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsKeyPressed(KEY_SPACE))
         {
             for (auto enemy : enemies)
             {
@@ -102,5 +108,7 @@ SetTargetFPS(60);
 
         EndDrawing();
     }
+    UnloadTexture(map);
+    UnloadHealthSystem();
     CloseWindow();
 }
